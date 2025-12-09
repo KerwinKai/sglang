@@ -643,6 +643,7 @@ class Qwen3VLForConditionalGeneration(nn.Module):
         self.deepstack_visual_indexes = self.visual.deepstack_visual_indexes
         self.num_deepstack_embeddings = len(self.deepstack_visual_indexes)
         self.use_deepstack = {Modality.IMAGE: True, Modality.VIDEO: True}
+        self.capture_aux_hidden_states = False
 
     def separate_deepstack_embeds(self, embedding):
         assert (
@@ -741,9 +742,13 @@ class Qwen3VLForConditionalGeneration(nn.Module):
             use_deepstack=self.use_deepstack,
         )
 
+        aux_hidden_states = None
+        if self.capture_aux_hidden_states:
+            hidden_states, aux_hidden_states = hidden_states
+
         if not get_embedding:
             return self.logits_processor(
-                input_ids, hidden_states, self.lm_head, forward_batch
+                input_ids, hidden_states, self.lm_head, forward_batch, aux_hidden_states
             )
         else:
             return self.pooler(hidden_states, forward_batch)

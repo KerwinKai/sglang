@@ -480,6 +480,24 @@ class Qwen3OmniMoeForConditionalGeneration(PreTrainedModel):
         self.enable_talker = False
         self.pad_input_ids = self.thinker.pad_input_ids
         self.forward = self.thinker.forward
+        self.capture_aux_hidden_states = False
+
+    def get_embed_and_head(self):
+        return self.thinker.model.embed_tokens.weight, self.thinker.lm_head.weight
+
+    def set_eagle3_layers_to_capture(self, layer_ids: Optional[List[int]] = None):
+        self.capture_aux_hidden_states = True
+        self.thinker.capture_aux_hidden_states = True
+        self.thinker.model.capture_aux_hidden_states = True
+        if layer_ids is None:
+            num_layers = self.config.num_hidden_layers
+            self.thinker.model.layers_to_capture = [
+                2,
+                num_layers // 2,
+                num_layers - 3,
+            ]  # Specific layers for EAGLE3 support
+        else:
+            self.thinker.model.layers_to_capture = [val + 1 for val in layer_ids]
 
     def load_weights(self, weights: Iterable[Tuple[str, torch.Tensor]]):
         stacked_params_mapping = [
